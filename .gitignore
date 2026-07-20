@@ -1,0 +1,4 @@
+node_modules/
+coverage/
+fleet-content-quality-evidence/
+*.tgz
