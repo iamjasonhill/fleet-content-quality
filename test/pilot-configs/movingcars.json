@@ -1,0 +1,15 @@
+{
+  "site": {
+    "coreSiteId": 4,
+    "canonicalDomain": "movingcars.com.au",
+    "canonicalUrl": "https://movingcars.com.au"
+  },
+  "repository": {
+    "url": "https://github.com/iamjasonhill/astrosites2026"
+  },
+  "approvalReference": "github:issue:762#pilot",
+  "optionalChecks": {
+    "language": "unsupported",
+    "seo": "declared_by_repository"
+  }
+}

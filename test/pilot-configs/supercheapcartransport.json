@@ -1,0 +1,15 @@
+{
+  "site": {
+    "coreSiteId": 15,
+    "canonicalDomain": "supercheapcartransport.com.au",
+    "canonicalUrl": "https://supercheapcartransport.com.au"
+  },
+  "repository": {
+    "url": "https://github.com/iamjasonhill/MM-supercheapcartransport"
+  },
+  "approvalReference": "github:issue:762#pilot",
+  "optionalChecks": {
+    "language": "declared_by_repository",
+    "seo": "declared_by_repository"
+  }
+}

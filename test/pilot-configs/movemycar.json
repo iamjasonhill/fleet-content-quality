@@ -1,0 +1,15 @@
+{
+  "site": {
+    "coreSiteId": 6,
+    "canonicalDomain": "movemycar.com.au",
+    "canonicalUrl": "https://movemycar.com.au"
+  },
+  "repository": {
+    "url": "https://github.com/iamjasonhill/MM-movemycar"
+  },
+  "approvalReference": "github:issue:762#pilot",
+  "optionalChecks": {
+    "language": "unsupported",
+    "seo": "unsupported"
+  }
+}
