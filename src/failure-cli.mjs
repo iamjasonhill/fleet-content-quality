@@ -11,7 +11,7 @@ async function main() {
   const options = parseArguments(process.argv.slice(2));
   const config = JSON.parse(await readFile(resolve(options.config ?? '.fleet-content-quality.json'), 'utf8'));
   const configuration = { ...DEFAULT_CONFIGURATION, ...(config.detector ?? {}) };
-  validateConfiguration(config, configuration);
+  validateConfiguration(config, configuration, { bindRepository: true });
   const output = resolve('fleet-content-quality-evidence');
   if (options.output && resolve(options.output) !== output) throw new Error('Failure evidence output must use the dedicated fleet-content-quality-evidence directory.');
   const lockfile = resolve(options.lockfile ?? 'package-lock.json');

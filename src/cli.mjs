@@ -29,7 +29,7 @@ async function main() {
   const configPath = resolve(options.config ?? '.fleet-content-quality.json');
   const config = JSON.parse(await readFile(configPath, 'utf8'));
   const configuration = { ...DEFAULT_CONFIGURATION, ...(config.detector ?? {}) };
-  validateConfiguration(config, configuration);
+  validateConfiguration(config, configuration, { bindRepository: true });
   const output = resolve(options.output ?? 'fleet-content-quality-evidence');
   const expectedOutput = resolve('fleet-content-quality-evidence');
   if (output !== expectedOutput) throw new Error('Evidence output must be the dedicated fleet-content-quality-evidence directory under the current workspace.');
@@ -134,7 +134,7 @@ function parseArguments(arguments_) {
   return options;
 }
 
-export function validateConfiguration(config, detector) {
+export function validateConfiguration(config, detector, { bindRepository = false } = {}) {
   const detectorKeys = [
     'minimumWords', 'shingleWords', 'minHashSeeds', 'lshBands', 'maximumCandidateComparisons',
     'calibratedResemblance', 'highResemblance', 'containment', 'templateResemblance',
@@ -151,7 +151,7 @@ export function validateConfiguration(config, detector) {
   }
   const canonical = normalizeUrl(config.site.canonicalUrl);
   if (canonical !== `https://${pilot.domain}/`) throw new Error('site.canonicalUrl must be the canonical HTTPS origin for the pilot domain.');
-  if (process.env.GITHUB_REPOSITORY && normalizeRepository(`${process.env.GITHUB_SERVER_URL ?? 'https://github.com'}/${process.env.GITHUB_REPOSITORY}`) !== pilot.repository) {
+  if (bindRepository && process.env.GITHUB_REPOSITORY && normalizeRepository(`${process.env.GITHUB_SERVER_URL ?? 'https://github.com'}/${process.env.GITHUB_REPOSITORY}`) !== pilot.repository) {
     throw new Error('Checked-out GitHub repository does not match the declared pilot repository.');
   }
   for (const key of ['minimumWords', 'shingleWords', 'minHashSeeds', 'lshBands', 'maximumCandidateComparisons']) {

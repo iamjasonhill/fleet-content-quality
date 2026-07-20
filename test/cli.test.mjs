@@ -36,7 +36,7 @@ test('CLI emits a complete digest-reconciled body-free Bossman bundle', async ()
     '--commit', 'a'.repeat(40), '--ref', 'refs/heads/main', '--run-id', 'fixture:1',
     '--lockfile', '../../package-lock.json', '--called-workflow-sha', 'b'.repeat(40),
     '--caller-workflow-ref', 'fixture/caller@refs/heads/main',
-  ], { cwd: fixture, encoding: 'utf8' });
+  ], { cwd: fixture, encoding: 'utf8', env: { ...process.env, GITHUB_REPOSITORY: 'iamjasonhill/astrosites2026' } });
   assert.equal(result.status, 0, result.stderr);
   const manifest = JSON.parse(await readFile(`${output}/manifest.json`, 'utf8'));
   assert.equal(manifest.schemaVersion, 'fleet-content-quality-evidence.v1');
@@ -64,7 +64,7 @@ test('CLI refuses destructive output paths before deleting anything', () => {
   const result = spawnSync(process.execPath, [
     '../../src/cli.mjs', '--config', '.fleet-content-quality.json', '--dist', 'dist', '--output', '.',
     '--commit', 'a'.repeat(40), '--lockfile', '../../package-lock.json',
-  ], { cwd: fixture, encoding: 'utf8' });
+  ], { cwd: fixture, encoding: 'utf8', env: { ...process.env, GITHUB_REPOSITORY: 'iamjasonhill/astrosites2026' } });
   assert.notEqual(result.status, 0);
   assert.match(result.stderr, /dedicated fleet-content-quality-evidence directory/);
 });
@@ -81,7 +81,7 @@ test('failure CLI emits a typed failed bundle with empty logical evidence files'
     '--commit', 'a'.repeat(40), '--ref', 'refs/heads/main', '--run-id', 'fixture:failed',
     '--lockfile', '../../package-lock.json', '--called-workflow-sha', 'b'.repeat(40),
     '--caller-workflow-ref', 'fixture/caller', '--failure-code', 'foundation_check_failed', '--failed-step', 'build',
-  ], { cwd: fixture, encoding: 'utf8' });
+  ], { cwd: fixture, encoding: 'utf8', env: { ...process.env, GITHUB_REPOSITORY: 'iamjasonhill/astrosites2026' } });
   assert.equal(result.status, 0, result.stderr);
   const manifest = JSON.parse(await readFile(`${output}/manifest.json`, 'utf8'));
   assert.equal(manifest.scope.completion, 'failed');
