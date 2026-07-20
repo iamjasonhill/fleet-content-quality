@@ -1,0 +1,134 @@
+name: Fleet content quality advisory
+
+on:
+  workflow_call:
+    inputs:
+      config-path:
+        description: Repository path to the reviewed pilot configuration.
+        required: false
+        default: .fleet-content-quality.json
+        type: string
+      runner-version:
+        description: Exact installed @moveroo/fleet-content-quality version expected in the lockfile.
+        required: true
+        type: string
+      called-workflow-sha:
+        description: Full immutable commit SHA used by the caller for this reusable workflow.
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  advisory:
+    name: fleet-content-quality-advisory
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout immutable repository subject
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Checkout immutable evidence runner
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          repository: iamjasonhill/fleet-content-quality
+          ref: ${{ inputs.called-workflow-sha }}
+          path: .fleet-content-quality-runner
+
+      - name: Use Node 22
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install exact lockfile
+        id: install
+        continue-on-error: true
+        run: npm ci
+
+      - name: Verify pinned runner version
+        id: runner
+        if: steps.install.outcome == 'success'
+        continue-on-error: true
+        env:
+          EXPECTED_RUNNER_VERSION: ${{ inputs.runner-version }}
+          EXPECTED_RUNNER_SHA: ${{ inputs.called-workflow-sha }}
+        run: |
+          node --input-type=module -e "import { readFileSync } from 'node:fs'; const p=JSON.parse(readFileSync('node_modules/@moveroo/fleet-content-quality/package.json')); const l=JSON.parse(readFileSync('package-lock.json')); const e=l.packages?.['node_modules/@moveroo/fleet-content-quality']; if(p.version!==process.env.EXPECTED_RUNNER_VERSION) throw new Error('Runner version drift: '+p.version); if(!(e?.resolved??'').includes(process.env.EXPECTED_RUNNER_SHA)) throw new Error('Runner lockfile SHA drift.');"
+
+      - name: Run universal contract check
+        id: contract
+        if: steps.runner.outcome == 'success'
+        continue-on-error: true
+        run: npm run check:contract
+
+      - name: Run universal Astro check
+        id: astro
+        if: steps.contract.outcome == 'success'
+        continue-on-error: true
+        run: npm run check
+
+      - name: Build immutable rendered output
+        id: build
+        if: steps.astro.outcome == 'success'
+        continue-on-error: true
+        run: npm run build
+
+      - name: Produce evidence-only bundle
+        id: producer
+        if: steps.build.outcome == 'success'
+        continue-on-error: true
+        env:
+          FLEET_CONTENT_CALLED_WORKFLOW_SHA: ${{ inputs.called-workflow-sha }}
+          FLEET_CONTENT_CALLER_WORKFLOW_REF: ${{ github.workflow_ref }}
+        run: >-
+          node .fleet-content-quality-runner/src/cli.mjs
+          --config "${{ inputs.config-path }}"
+          --commit "${{ github.sha }}"
+          --ref "${{ github.ref }}"
+          --run-id "github:${{ github.run_id }}:${{ github.run_attempt }}"
+          --called-workflow-sha "${{ inputs.called-workflow-sha }}"
+          --caller-workflow-ref "${{ github.workflow_ref }}"
+
+      - name: Produce failed-run evidence
+        if: steps.producer.outcome != 'success'
+        env:
+          INSTALL_OUTCOME: ${{ steps.install.outcome }}
+          RUNNER_OUTCOME: ${{ steps.runner.outcome }}
+          CONTRACT_OUTCOME: ${{ steps.contract.outcome }}
+          ASTRO_OUTCOME: ${{ steps.astro.outcome }}
+          BUILD_OUTCOME: ${{ steps.build.outcome }}
+          PRODUCER_OUTCOME: ${{ steps.producer.outcome }}
+        run: |
+          failed_step="install"
+          for step in runner contract astro build producer; do
+            outcome_var="${step^^}_OUTCOME"
+            if [ "${!outcome_var}" = "failure" ]; then failed_step="$step"; break; fi
+          done
+          node .fleet-content-quality-runner/src/failure-cli.mjs \
+            --config "${{ inputs.config-path }}" \
+            --commit "${{ github.sha }}" \
+            --ref "${{ github.ref }}" \
+            --run-id "github:${{ github.run_id }}:${{ github.run_attempt }}" \
+            --lockfile package-lock.json \
+            --called-workflow-sha "${{ inputs.called-workflow-sha }}" \
+            --caller-workflow-ref "${{ github.workflow_ref }}" \
+            --failure-code "foundation_check_failed" \
+            --failed-step "$failed_step"
+
+      - name: Upload disposable transport archive
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: fleet-content-quality-evidence-${{ github.sha }}
+          path: fleet-content-quality-evidence/
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Evidence-only boundary
+        run: |
+          echo "Advisory evidence produced. This workflow does not deploy, publish, submit IndexNow, merge, mutate providers, or activate Standards."
+
+      - name: Preserve deterministic foundation failure
+        if: steps.producer.outcome != 'success'
+        run: exit 1

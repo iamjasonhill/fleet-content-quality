@@ -1,0 +1,23 @@
+{
+  "name": "@moveroo/fleet-content-quality",
+  "version": "1.0.0",
+  "description": "Evidence-only rendered content quality runner for the Moveroo fleet",
+  "type": "module",
+  "bin": {
+    "fleet-content-quality": "src/cli.mjs",
+    "fleet-content-quality-failure": "src/failure-cli.mjs"
+  },
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "check": "node --check src/cli.mjs && node --check src/failure-cli.mjs && node --check src/analyse.mjs && node --check src/contract.mjs",
+    "test": "node --test",
+    "verify": "npm run check && npm test"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "license": "UNLICENSED",
+  "private": false
+}
